@@ -1,12 +1,13 @@
 import { users } from "@prisma/client";
 import { Request } from "express";
 import { validateDisco } from "./validate";
-import { PrismaClient } from "@prisma/client";
 import { logger } from "../../utils/logger";
 import { checkMobileNumber } from "../../common/checkNumber";
 import { v4 as uuid } from "uuid";
 import { WalletController } from "../../helpers/wallet/WalletController";
 import { PayDisco } from "./purchase";
+import { CommissionController } from "../../helpers/CommissionController";
+import { prisma } from "../../models/prisma";
 
 export class MainDiscoController {
     constructor(public body: Request, public user: users) {
@@ -19,7 +20,6 @@ export class MainDiscoController {
     public type: string = "";
     public meterNo: string = "";
     public suffix: string = "";
-    public prisma = new PrismaClient();
     public name: string = "";
     public amount: string = "";
     public request_id: string = "";
@@ -48,11 +48,11 @@ export class MainDiscoController {
         this.body.body?.type === "POSTPAID" ? (this.suffix = "POSTPAID") : (this.suffix = "PREPAID");
         logger.info(this.suffix, this.disco);
         this.name = `${this.disco}_${this.suffix}`;
-        const productStatus = await this.prisma.product_categories.findFirst({ where: { name: this.name } });
+        const productStatus = await prisma.product_categories.findFirst({ where: { name: this.name } });
         if (productStatus?.status === "1") {
             return { status: 400, message: "product is not available yet" };
         }
-        const checkSwitcher = await this.prisma.switchers.findFirst({ where: { name: this.name } });
+        const checkSwitcher = await prisma.switchers.findFirst({ where: { name: this.name } });
         if (!checkSwitcher) {
             return { message: "failed", status: 400 };
         }
@@ -102,24 +102,27 @@ export class MainDiscoController {
             return { message: checkPhone.message, status: checkPhone.status };
         }
 
-        const checkTrans = await this.prisma.transactions.findUnique({ where: { request_id: this.request_id } });
+        const checkTrans = await prisma.transactions.findUnique({ where: { request_id: this.request_id } });
         if (checkTrans) return { message: "Duplicate request Id", status: "310" };
 
         const payload = JSON.stringify(this.body.body);
-        logger.info(JSON.stringify(this.body.body));
-        logger.info(JSON.stringify(this.user));
         this.body.body?.type === "POSTPAID" ? (this.suffix = "POSTPAID") : (this.suffix = "PREPAID");
         this.name = `${this.disco}_${this.suffix}`;
-        const productStatus = await this.prisma.product_categories.findFirst({ where: { name: this.name } });
+        const productStatus = await prisma.product_categories.findFirst({ where: { name: this.name } });
         if (productStatus?.status === "1") {
             return { status: 400, message: "product is not available yet" };
         }
-        const checkSwitcher = await this.prisma.switchers.findFirst({ where: { name: this.name } });
+        const checkSwitcher = await prisma.switchers.findFirst({ where: { name: this.name } });
         if (!checkSwitcher) {
-            return { message: "failed", status: 400 };
+            return { message: "failed", status: "300" };
         }
 
-        const newDisco = await this.prisma.disco_requests.create({
+        const checkProduct = await prisma.disco_requests.findFirst({ where: { request_id: this.request_id } });
+        if (checkProduct) {
+            return { message: "duplicate request Id", status: "300" };
+        }
+
+        const newDisco = await prisma.disco_requests.create({
             data: {
                 request_id: this.request_id,
                 phoneNumber: this.phone_number,
@@ -137,17 +140,19 @@ export class MainDiscoController {
         });
         const wallet = new WalletController(this.user.id, Number(this.amount), "DISCO", newDisco.trans_code, "Electricity Purchase");
         const debited = await wallet.debit();
+        logger.info(debited);
         if (debited.message === "success" && debited.data === Number(this.amount)) {
+            logger.info("yes it is correct");
             return await this.giveValue(newDisco.trans_code, "WALLET");
         } else {
             return { message: "insufficient balance to comeplete transaction", status: "300", amount: this.amount };
         }
     }
 
-    async giveValue(trans_code: string, data: string) {
-        const checkDisco = await this.prisma.disco_requests.findUnique({ where: { request_id: trans_code } });
+    async giveValue(trans_code: string, data: string): Promise<Partial<electrictyPaymentResponse & failedResponse>> {
+        const checkDisco = await prisma.disco_requests.findUnique({ where: { trans_code: trans_code } });
         if (!checkDisco) return { message: "failed", status: "400" };
-        await this.prisma.transactions.create({
+        await prisma.transactions.create({
             data: {
                 reference: checkDisco.request_id,
                 amount: Number(this.amount),
@@ -165,5 +170,55 @@ export class MainDiscoController {
         });
         const discoPayment = new PayDisco(checkDisco.id);
         const checkPayment = await discoPayment.buy();
+        if (checkPayment?.status === "300") {
+            const find = await prisma.transactions.findUnique({ where: { request_id: trans_code } });
+            console.log(find);
+            try {
+                Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "TWO" } }), await prisma.disco_requests.update({ where: { request_id: trans_code }, data: { status: "TWO" } })]);
+            } catch (error) {
+                logger.error(error);
+                return { message: checkPayment.message, status: "300" };
+            }
+            const wallet = new WalletController(this.user.id, Number(checkDisco.amount), "DISCO", trans_code, "REVERSAL_DISCO");
+            await wallet.credit();
+            return {
+                message: checkPayment.message,
+                status: checkPayment.status,
+            };
+        }
+        if (checkPayment?.status === "400") {
+            try {
+                Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.disco_requests.update({ where: { request_id: trans_code }, data: { status: "ZERO" } })]);
+            } catch (error) {
+                logger.error(error);
+                return { message: "failed", status: "300" };
+            }
+            const wallet = new WalletController(this.user.id, Number(checkDisco.amount), "DISCO", trans_code, "REVERSAL_DISCO");
+            await wallet.credit();
+            return {
+                message: "failed",
+                status: checkPayment.status,
+            };
+        }
+        try {
+            Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.disco_requests.update({ where: { request_id: trans_code }, data: { status: "ONE" } })]);
+        } catch (error) {
+            logger.error(error);
+            return { message: "failed", status: "300" };
+        }
+        const commission = new CommissionController(trans_code, "DISCO");
+        await commission.disubrse();
+        return {
+            token: checkPayment?.disco,
+            date: checkPayment?.date,
+            status: "200",
+            message: checkPayment?.message,
+            amount: checkPayment?.amount,
+            amountCharged: checkPayment?.amountCharged,
+            TransRef: checkPayment?.TransRef,
+            disco: checkPayment?.disco,
+            customerName: checkPayment?.customerName,
+            unit: checkPayment?.unit,
+        };
     }
 }

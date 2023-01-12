@@ -1,12 +1,11 @@
 import { Request, Response } from "express";
-import { PrismaClient, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { logger } from "../../utils/logger";
 import HTTP_STATUS_CODE from "../../constants/httpCodes";
 import bcrypt from "bcryptjs";
 import { checkMobileNumber } from "../../common/checkNumber";
 import { generateWalletId } from "../../common/generateRandomId";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../models/prisma";
 
 export const createAccount = async (req: Request, res: Response) => {
     const { name, email, phone_number, password } = req.body;
@@ -15,8 +14,15 @@ export const createAccount = async (req: Request, res: Response) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const createNewUser = await prisma.users.create({ data: { name, email, phone_number, password: hashedPassword, status: "ONE" } });
 
-        await prisma.wallets.create({ data: { code: generateWalletId().toString(), user_id: createNewUser.id, balance: generateWalletId(), bonus_balance: 0.0, commission_balance: 0.0 } });
-
+        try {
+            Promise.all([
+                await prisma.wallets.create({ data: { code: generateWalletId().toString(), user_id: createNewUser.id, balance: generateWalletId(), bonus_balance: 0.0, commission_balance: 0.0 } }),
+                await prisma.agent_infos.create({ data: { user_id: createNewUser.id, status: "ONE" } }),
+            ]);
+        } catch (error) {
+            logger.error(error);
+            return res.status(HTTP_STATUS_CODE.BAD_REQUEST).json({ error });
+        }
         return res.status(200).json({ message: "user created", user: { id: createNewUser.id, name: createNewUser.name, email: createNewUser.email, phone_number: createNewUser.phone_number } });
     } catch (e) {
         if (e instanceof Prisma.PrismaClientKnownRequestError) {

@@ -1,7 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../models/prisma";
+import { logger } from "../../utils/logger";
 
 export class WalletController {
-    public balance: number = 0;
     constructor(public userId: bigint, public amount: number, public reference: string, public source: string, public description: string) {
         this.amount = amount;
         this.userId = userId;
@@ -10,21 +10,64 @@ export class WalletController {
         this.source = source;
     }
 
-    private prisma = new PrismaClient();
+    public remainingBalance: number = 0;
+    public balance: number = 0;
 
     async debit(): Promise<returnResponse> {
+        logger.info("gotten to debitting user");
         if (this.amount <= 0) return { message: "failed" };
-        const checkUser = await this.prisma.wallets.findUnique({ where: { user_id: this.userId } });
+        const checkUser = await prisma.wallets.findUnique({ where: { user_id: this.userId } });
         if (!checkUser) return { message: "failed" };
-        const deductBalance = await this.prisma.wallets.update({ where: { user_id: this.userId }, data: { balance: { decrement: this.amount } } });
+        const deductBalance = await prisma.wallets.update({ where: { user_id: this.userId }, data: { balance: { decrement: this.amount } } });
         this.balance = deductBalance.balance;
         if (this.balance >= 0) {
-            await this.prisma.wallet_histories.create({ data: { amount: this.amount, user_id: this.userId, description: this.description, reference: this.reference, balance_after: this.balance, source: this.source, type: "DEBIT" } });
+            await prisma.wallet_histories.create({ data: { amount: this.amount, user_id: this.userId, description: this.description, reference: this.reference, balance_after: this.balance, source: this.source, type: "DEBIT" } });
             return { message: "success", data: this.amount };
         } else {
-            await this.prisma.wallets.update({ where: { user_id: this.userId }, data: { balance: this.amount } });
+            await prisma.wallets.update({ where: { user_id: this.userId }, data: { balance: this.amount } });
             return { message: "failed" };
         }
     }
-    async credit() {}
+    async credit(): Promise<returnResponse> {
+        logger.info("gotten to creditting user");
+        if (this.description.includes("REVERSAL")) {
+            this.source = "System_Reversal";
+        }
+        const checkDetails = prisma.wallets.findFirst({ where: { user_id: this.userId } });
+        if (!checkDetails) return { message: "failed" };
+        const wallet = await prisma.wallets.update({ where: { user_id: this.userId }, data: { balance: { increment: this.amount } } });
+        this.balance = wallet.balance + this.amount;
+        await prisma.wallet_histories.create({
+            data: {
+                amount: this.amount,
+                user_id: this.userId,
+                description: this.description,
+                reference: this.reference,
+                balance_after: this.balance,
+                source: this.source,
+                type: "CREDIT",
+            },
+        });
+        return { message: "success", data: this.amount };
+    }
+
+    async commission(): Promise<returnResponse> {
+        logger.debug(`${this.userId} ${this.description} ${this.reference} ${this.source} ${this.amount}`);
+        const checkDetails = prisma.wallets.findFirst({ where: { user_id: this.userId } });
+        if (!checkDetails) return { message: "failed" };
+        const wallet = await prisma.wallets.update({ where: { user_id: this.userId }, data: { commission_balance: { increment: this.amount } } });
+        this.balance = wallet.balance + this.amount;
+        await prisma.wallet_histories.create({
+            data: {
+                amount: this.amount,
+                user_id: this.userId,
+                description: this.description,
+                reference: this.reference,
+                balance_after: this.balance,
+                source: this.source,
+                type: "CREDIT",
+            },
+        });
+        return { message: "success", data: this.amount };
+    }
 }

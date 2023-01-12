@@ -4,6 +4,6 @@ interface Accept {
     correct: boolean;
 }
 interface returnResponse {
-    message: string;
+    message: "success" | "failed";
     data?: number;
 }

@@ -17,7 +17,7 @@ interface failedResponse {
     status: string;
 }
 
-interface successTokenResponse {
+interface shagoResponse {
     token: string;
     configureToken: null;
     resetToken: null;
@@ -37,5 +37,18 @@ interface successTokenResponse {
     customerAddress: string;
     date: Date;
     transId: string;
+    disco: string;
+}
+
+interface electrictyPaymentResponse {
+    token: string;
+    unit: string;
+    amount: string;
+    amountCharged: string;
+    message: string;
+    status: string;
+    customerName: string;
+    date: Date;
+    TransRef: string;
     disco: string;
 }
