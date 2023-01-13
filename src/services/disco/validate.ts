@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function validateDisco(disco: string, biller_id: bigint, meterNo: string, type: string): Promise<Partial<successResponse & failedResponse>> {
+export async function validateDisco(disco: string, biller_id: number, meterNo: string, type: string): Promise<Partial<successResponse & failedResponse>> {
     switch (Number(biller_id)) {
         case 12:
             try {

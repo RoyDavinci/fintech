@@ -1,3 +1,4 @@
+import { transactions } from "@prisma/client";
 import { prisma } from "../models/prisma";
 import { logger } from "../utils/logger";
 import { WalletController } from "./wallet/WalletController";
@@ -10,14 +11,18 @@ export class CommissionController {
 
     public amount: number = 0;
     public actualAmount: number = 0;
+    public static get: any;
 
     async disubrse() {
         let get;
-        let transactions;
+        let transactions: transactions | null = null;
         switch (this.type) {
             case "DISCO":
-                get = await prisma.disco_requests.findUnique({ where: { request_id: this.reference } });
-                transactions = await prisma.transactions.findUnique({ where: { reference: this.reference } });
+                get = await prisma.disco_requests.findUnique({ where: { trans_code: this.reference } });
+                transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
+            case "BET":
+                get = await prisma.bet_requests.findUnique({ where: { trans_code: this.reference } });
+                transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
         }
         logger.info("insideComisionAirtime airtimerequestBelow");
 
@@ -34,6 +39,7 @@ export class CommissionController {
                 } else {
                     if (get?.amount) {
                         this.amount = (get.amount * Number(vetCommission.value)) / 100;
+                        console.log(this.amount);
                     }
                 }
             } else {
@@ -45,6 +51,7 @@ export class CommissionController {
                 } else {
                     if (get?.amount) {
                         this.amount = (get.amount * Number(productCheck.agent_value)) / 100;
+                        console.log(this.amount);
                     }
                 }
             }
@@ -52,8 +59,10 @@ export class CommissionController {
             const vetCommission = await prisma.commission_details.findFirst({ where: { user_id: get?.id, category_id: get?.category_id } });
             if (vetCommission) {
                 this.amount = Number(vetCommission.value);
+                console.log(this.amount);
             } else {
                 this.amount = Number(productCheck?.agent_value);
+                console.log("else", this.amount);
             }
         }
 
@@ -66,12 +75,12 @@ export class CommissionController {
                         this.actualAmount = findValue?.amount * findValue.quantity - this.amount;
                     }
 
-                    await prisma.transactions.update({ where: { reference: this.reference }, data: { balance_after: this.actualAmount } });
+                    await prisma.transactions.update({ where: { request_id: this.reference }, data: { balance_after: this.actualAmount } });
                     const wallet = new WalletController(user.user_id, this.amount, `${this.type}_COMMISSION`, this.reference, "COMMISSION");
                     await wallet.credit();
                 }
                 this.actualAmount = get?.amount - this.amount;
-                await prisma.transactions.update({ where: { reference: this.reference }, data: { balance_after: this.actualAmount } });
+                await prisma.transactions.update({ where: { request_id: this.reference }, data: { balance_after: this.actualAmount } });
                 const wallet = new WalletController(user.user_id, this.amount, `${this.type}_COMMISSION`, this.reference, "COMMISSION");
                 await wallet.credit();
             } else {
@@ -84,7 +93,8 @@ export class CommissionController {
                     await prisma.transactions.update({ where: { reference: this.reference }, data: { balance_after: this.actualAmount } });
                 }
                 this.actualAmount = get?.amount - this.amount;
-                await prisma.transactions.update({ where: { reference: this.reference }, data: { balance_after: this.actualAmount } });
+                console.log({ actualamount: this.actualAmount, getamount: get.amount, amount: this.amount });
+                await prisma.transactions.update({ where: { request_id: this.reference }, data: { balance_after: this.actualAmount } });
             }
         }
     }

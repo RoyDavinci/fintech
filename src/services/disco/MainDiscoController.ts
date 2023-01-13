@@ -126,7 +126,7 @@ export class MainDiscoController {
             data: {
                 request_id: this.request_id,
                 phoneNumber: this.phone_number,
-                user_id: BigInt(this.user.id),
+                user_id: this.user.id,
                 meterNo: this.meterNo,
                 amount: Number(this.amount),
                 type: this.type,
@@ -171,10 +171,8 @@ export class MainDiscoController {
         const discoPayment = new PayDisco(checkDisco.id);
         const checkPayment = await discoPayment.buy();
         if (checkPayment?.status === "300") {
-            const find = await prisma.transactions.findUnique({ where: { request_id: trans_code } });
-            console.log(find);
             try {
-                Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "TWO" } }), await prisma.disco_requests.update({ where: { request_id: trans_code }, data: { status: "TWO" } })]);
+                Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "TWO" } }), await prisma.disco_requests.update({ where: { trans_code: trans_code }, data: { status: "TWO" } })]);
             } catch (error) {
                 logger.error(error);
                 return { message: checkPayment.message, status: "300" };
@@ -188,7 +186,7 @@ export class MainDiscoController {
         }
         if (checkPayment?.status === "400") {
             try {
-                Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.disco_requests.update({ where: { request_id: trans_code }, data: { status: "ZERO" } })]);
+                Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.disco_requests.update({ where: { trans_code: trans_code }, data: { status: "ZERO" } })]);
             } catch (error) {
                 logger.error(error);
                 return { message: "failed", status: "300" };
@@ -201,7 +199,7 @@ export class MainDiscoController {
             };
         }
         try {
-            Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.disco_requests.update({ where: { request_id: trans_code }, data: { status: "ONE" } })]);
+            Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.disco_requests.update({ where: { trans_code: trans_code }, data: { status: "ONE" } })]);
         } catch (error) {
             logger.error(error);
             return { message: "failed", status: "300" };
@@ -209,7 +207,7 @@ export class MainDiscoController {
         const commission = new CommissionController(trans_code, "DISCO");
         await commission.disubrse();
         return {
-            token: checkPayment?.disco,
+            token: checkPayment?.token,
             date: checkPayment?.date,
             status: "200",
             message: checkPayment?.message,

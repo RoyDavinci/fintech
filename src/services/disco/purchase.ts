@@ -16,7 +16,7 @@ export class PayDisco {
         const response = await validateDisco(checkDisco.disco_type, checkDisco?.biller_id, checkDisco?.meterNo, checkDisco?.type);
         const body = {
             serviceCode: "AOB",
-            disco: checkDisco?.api_method,
+            disco: checkDisco?.disco_type,
             phone_number: checkDisco?.phoneNumber,
             meterNo: checkDisco?.meterNo,
             type: checkDisco?.type,

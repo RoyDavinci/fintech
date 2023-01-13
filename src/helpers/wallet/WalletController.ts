@@ -2,7 +2,7 @@ import { prisma } from "../../models/prisma";
 import { logger } from "../../utils/logger";
 
 export class WalletController {
-    constructor(public userId: bigint, public amount: number, public reference: string, public source: string, public description: string) {
+    constructor(public userId: number, public amount: number, public reference: string, public source: string, public description: string) {
         this.amount = amount;
         this.userId = userId;
         this.description = description;
@@ -33,17 +33,18 @@ export class WalletController {
         if (this.description.includes("REVERSAL")) {
             this.source = "System_Reversal";
         }
+        if (this.amount <= 0) return { message: "failed" };
         const checkDetails = prisma.wallets.findFirst({ where: { user_id: this.userId } });
         if (!checkDetails) return { message: "failed" };
         const wallet = await prisma.wallets.update({ where: { user_id: this.userId }, data: { balance: { increment: this.amount } } });
-        this.balance = wallet.balance + this.amount;
+        // this.balance = wallet.balance + this.amount;
         await prisma.wallet_histories.create({
             data: {
                 amount: this.amount,
                 user_id: this.userId,
                 description: this.description,
                 reference: this.reference,
-                balance_after: this.balance,
+                balance_after: wallet.balance,
                 source: this.source,
                 type: "CREDIT",
             },
@@ -53,6 +54,7 @@ export class WalletController {
 
     async commission(): Promise<returnResponse> {
         logger.debug(`${this.userId} ${this.description} ${this.reference} ${this.source} ${this.amount}`);
+        if (this.amount <= 0) return { message: "failed" };
         const checkDetails = prisma.wallets.findFirst({ where: { user_id: this.userId } });
         if (!checkDetails) return { message: "failed" };
         const wallet = await prisma.wallets.update({ where: { user_id: this.userId }, data: { commission_balance: { increment: this.amount } } });
