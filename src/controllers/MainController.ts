@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import HTTP_STATUS_CODE from "../constants/httpCodes";
 import { MainBetController } from "../services/bet/MainBetController";
+import { MainDataController } from "../services/data/MainDataController";
 import { MainDiscoController } from "../services/disco/MainDiscoController";
 import { logger } from "../utils/logger";
 
@@ -26,6 +27,14 @@ export async function mainApiController(req: Request, res: Response) {
                 const payBet = new MainBetController(req, req.user);
                 const payBetFunc = await payBet.purchase();
                 return res.status(payBetFunc.status ? Number(payBetFunc.status) : 200).json({ ...payBetFunc });
+            case "DTA":
+                const fetchData = new MainDataController(req, req.user);
+                const fetchDataFunc = await fetchData.validate();
+                return res.status(fetchDataFunc.status ? Number(fetchDataFunc.status) : 200).json({ ...fetchDataFunc });
+            case "DTA":
+                const buyData = new MainDataController(req, req.user);
+                const buyDataFunc = await buyData.payment();
+                return res.status(buyDataFunc.status ? Number(buyDataFunc.status) : 200).json({ ...buyDataFunc });
             default:
                 return res.status(200).json({ message: "yup" });
         }

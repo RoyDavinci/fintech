@@ -16,7 +16,7 @@ export class MainBetController {
     public type = "";
     public biller = "";
     public customerId = "";
-    public efrors: string[] = [];
+    public errors: string[] = [];
     public categoryName = "";
     public request_id = "";
     public amount = 0;
@@ -24,22 +24,22 @@ export class MainBetController {
 
     async validate() {
         if (!this.body.body.type) {
-            this.efrors.push("type is required");
+            this.errors.push("type is required");
         } else {
             this.type = this.body.body.type;
         }
         if (!this.body.body.biller) {
-            this.efrors.push("biller is required");
+            this.errors.push("biller is required");
         } else {
             this.biller = this.body.body.biller;
         }
         if (!this.body.body.customerId) {
-            this.efrors.push("customerId is required");
+            this.errors.push("customerId is required");
         } else {
             this.customerId = this.body.body.customerId;
         }
-        if (this.efrors.length >= 1) {
-            return { message: "failed", error: this.efrors, status: "300" };
+        if (this.errors.length >= 1) {
+            return { message: "failed", error: this.errors, status: "300" };
         }
         this.categoryName = this.body.body.type;
         const checkProductCategory = await prisma.product_categories.findFirst({ where: { name: this.categoryName } });
@@ -53,37 +53,37 @@ export class MainBetController {
     }
     async purchase() {
         if (!this.body.body.type) {
-            this.efrors.push("type is required");
+            this.errors.push("type is required");
         } else {
             this.type = this.body.body.type;
         }
         if (!this.body.body.biller) {
-            this.efrors.push("biller is required");
+            this.errors.push("biller is required");
         } else {
             this.biller = this.body.body.biller;
         }
         if (!this.body.body.customerId) {
-            this.efrors.push("customerId is required");
+            this.errors.push("customerId is required");
         } else {
             this.customerId = this.body.body.customerId;
         }
         if (!this.body.body.request_id) {
-            this.efrors.push("request_id is required");
+            this.errors.push("request_id is required");
         } else {
             this.request_id = this.body.body.request_id;
         }
         if (!this.body.body.amount) {
-            this.efrors.push("amount is required");
+            this.errors.push("amount is required");
         } else {
             this.amount = this.body.body.amount;
         }
         if (!this.body.body.name) {
-            this.efrors.push("name is required");
+            this.errors.push("name is required");
         } else {
             this.name = this.body.body.name;
         }
-        if (this.efrors.length >= 1) {
-            return { message: "failed", error: this.efrors, status: "300" };
+        if (this.errors.length >= 1) {
+            return { message: "failed", error: this.errors, status: "300" };
         }
         const checkTrans = await prisma.transactions.findUnique({ where: { reference: this.request_id } });
         if (checkTrans) return { message: "Duplicate request Id", status: "310" };
