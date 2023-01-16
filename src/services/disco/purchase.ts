@@ -13,7 +13,7 @@ export class PayDisco {
         const arr = ["301", "500", "501", "100"];
         const checkDisco = await prisma.disco_requests.findUnique({ where: { id: this.unique_id } });
         if (!checkDisco) return { message: "failed", status: "400" };
-        const response = await validateDisco(checkDisco.disco_type, checkDisco?.biller_id, checkDisco?.meterNo, checkDisco?.type);
+        const response = await validateDisco(checkDisco?.disco_type, checkDisco?.biller_id, checkDisco?.meterNo, checkDisco?.type);
         const body = {
             serviceCode: "AOB",
             disco: checkDisco?.disco_type,

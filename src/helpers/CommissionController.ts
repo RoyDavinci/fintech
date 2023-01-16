@@ -23,6 +23,15 @@ export class CommissionController {
             case "BET":
                 get = await prisma.bet_requests.findUnique({ where: { trans_code: this.reference } });
                 transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
+            case "DATA":
+                get = await prisma.data_requests.findUnique({ where: { trans_code: this.reference } });
+                transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
+            case "AIRTIME":
+                get = await prisma.airtime_requests.findUnique({ where: { trans_code: this.reference } });
+                transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
+            case "SMILE_RECHARGE":
+                get = await prisma.smile_requests.findUnique({ where: { trans_code: this.reference } });
+                transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
         }
         logger.info("insideComisionAirtime airtimerequestBelow");
 
@@ -38,7 +47,7 @@ export class CommissionController {
                     }
                 } else {
                     if (get?.amount) {
-                        this.amount = (get.amount * Number(vetCommission.value)) / 100;
+                        this.amount = (Number(get.amount) * Number(vetCommission.value)) / 100;
                         console.log(this.amount);
                     }
                 }
@@ -50,7 +59,7 @@ export class CommissionController {
                     }
                 } else {
                     if (get?.amount) {
-                        this.amount = (get.amount * Number(productCheck.agent_value)) / 100;
+                        this.amount = (Number(get.amount) * Number(productCheck.agent_value)) / 100;
                         console.log(this.amount);
                     }
                 }
@@ -61,7 +70,8 @@ export class CommissionController {
                 this.amount = Number(vetCommission.value);
                 console.log(this.amount);
             } else {
-                this.amount = Number(productCheck?.agent_value);
+                const value = productCheck?.agent_value ? Number(productCheck.agent_value) : 10;
+                this.amount = value;
                 console.log("else", this.amount);
             }
         }
@@ -79,7 +89,7 @@ export class CommissionController {
                     const wallet = new WalletController(user.user_id, this.amount, `${this.type}_COMMISSION`, this.reference, "COMMISSION");
                     await wallet.credit();
                 }
-                this.actualAmount = get?.amount - this.amount;
+                this.actualAmount = Number(get?.amount) - this.amount;
                 await prisma.transactions.update({ where: { request_id: this.reference }, data: { balance_after: this.actualAmount } });
                 const wallet = new WalletController(user.user_id, this.amount, `${this.type}_COMMISSION`, this.reference, "COMMISSION");
                 await wallet.credit();
@@ -92,7 +102,7 @@ export class CommissionController {
 
                     await prisma.transactions.update({ where: { reference: this.reference }, data: { balance_after: this.actualAmount } });
                 }
-                this.actualAmount = get?.amount - this.amount;
+                this.actualAmount = Number(get?.amount) - this.amount;
                 console.log({ actualamount: this.actualAmount, getamount: get.amount, amount: this.amount });
                 await prisma.transactions.update({ where: { request_id: this.reference }, data: { balance_after: this.actualAmount } });
             }
