@@ -4,6 +4,7 @@ import { MainAirtimeController } from "../services/aitrime/MainAirtimeCoontrolle
 import { MainBetController } from "../services/bet/MainBetController";
 import { MainDataController } from "../services/data/MainDataController";
 import { MainDiscoController } from "../services/disco/MainDiscoController";
+import { MainShowMaxController } from "../services/Showmax/MainShowMaxController";
 import { MainSmileBundleController } from "../services/smile/MainSmileBundleController";
 import { MainSmileController } from "../services/smile/MainSmileController";
 import { logger } from "../utils/logger";
@@ -55,6 +56,18 @@ export async function mainApiController(req: Request, res: Response) {
                 const validateSmileBundle = new MainSmileBundleController(req, req.user);
                 const validateSmileBundleFunc = await validateSmileBundle.validate();
                 return res.status(validateSmileBundleFunc.status ? Number(validateSmileBundleFunc.status) : 200).json({ ...validateSmileBundleFunc });
+            case "P-Internet":
+                const paymentSmileBundle = new MainSmileBundleController(req, req.user);
+                const paymentSmileBundleFunc = await paymentSmileBundle.purchase();
+                return res.status(paymentSmileBundleFunc.status ? Number(paymentSmileBundleFunc.status) : 200).json({ ...paymentSmileBundleFunc });
+            case "SHVAL":
+                const validateShowMax = new MainShowMaxController(req, req.user);
+                const validateShowMaxFunc = await validateShowMax.validate();
+                return res.status(validateShowMaxFunc.status ? Number(validateShowMaxFunc.status) : 200).json({ ...validateShowMaxFunc });
+            case "SHPAY":
+                const showmaxPayment = new MainShowMaxController(req, req.user);
+                const showmaxPaymentFunc = await showmaxPayment.validate();
+                return res.status(showmaxPaymentFunc.status ? Number(showmaxPaymentFunc.status) : 200).json({ ...showmaxPaymentFunc });
             default:
                 return res.status(400).json({ message: "invalid service code supplied" });
         }

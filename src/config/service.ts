@@ -4,5 +4,11 @@ const serviceConfig = {
         liveUrl: "",
         key: process.env.HASHKEY,
     },
+    showmax: {
+        username: "test",
+        password: "NeRWNtWQMS",
+        lookup: "https://mcapi-demo.herokuapp.com/Vendor/Lookup",
+        vend: "https://mcapi-demo.herokuapp.com/Vendor/SinglePayment",
+    },
 };
 export default serviceConfig;

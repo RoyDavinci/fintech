@@ -140,17 +140,7 @@ export class MainSmileBundleController {
                 logger.error(error);
                 return { message: "failed", status: "300" };
             }
-            return {
-                message: "transaction successful",
-                status: "200",
-                amount: this.price,
-                amountCharged: `${this.price}`,
-                productamount: 1,
-                transref: trans_code,
-                type: "SMILE_RECHARGE",
-                date: new Date(),
-                account_no: this.account,
-            };
+            return { message: "Successful", status: "200", TransRef: trans_code, date: "", amount: this.price, amountCharged: this.price, pin_based: false };
         } catch (error) {
             try {
                 Promise.all([await prisma.smiledata_requests.update({ where: { trans_code }, data: { status: "TWO" } }), await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "TWO" } })]);
