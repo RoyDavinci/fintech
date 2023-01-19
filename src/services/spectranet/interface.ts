@@ -12,3 +12,19 @@ interface validateSpectranetResponse {
         },
     ];
 }
+
+interface paymentSpectranetResponse {
+    amount: number;
+    message: string;
+    status: string;
+    transId: string;
+    date: string;
+    pin: [
+        {
+            pin: string;
+            serial: string;
+            expirydat: string;
+        },
+    ];
+    transactionRef: string;
+}

@@ -4,9 +4,13 @@ import { MainAirtimeController } from "../services/aitrime/MainAirtimeCoontrolle
 import { MainBetController } from "../services/bet/MainBetController";
 import { MainDataController } from "../services/data/MainDataController";
 import { MainDiscoController } from "../services/disco/MainDiscoController";
+import { MainDstvController } from "../services/dstv/MainDstvController";
+import { MainNtelController } from "../services/ntel/MainNtelController";
 import { MainShowMaxController } from "../services/Showmax/MainShowMaxController";
 import { MainSmileBundleController } from "../services/smile/MainSmileBundleController";
 import { MainSmileController } from "../services/smile/MainSmileController";
+import { MainSpectranetController } from "../services/spectranet/MainSpectranetController";
+import { MainTollController } from "../services/toll/MainTollController";
 import { logger } from "../utils/logger";
 
 export async function mainApiController(req: Request, res: Response) {
@@ -53,21 +57,63 @@ export async function mainApiController(req: Request, res: Response) {
                 const paySmileRechargeFunc = await paySmileRecharge.purchase();
                 return res.status(paySmileRechargeFunc.status ? Number(paySmileRechargeFunc.status) : 200).json({ ...paySmileRechargeFunc });
             case "V-Internet":
-                const validateSmileBundle = new MainSmileBundleController(req, req.user);
-                const validateSmileBundleFunc = await validateSmileBundle.validate();
-                return res.status(validateSmileBundleFunc.status ? Number(validateSmileBundleFunc.status) : 200).json({ ...validateSmileBundleFunc });
+                if (req.body.type === "SMILE") {
+                    const validateSmileBundle = new MainSmileBundleController(req, req.user);
+                    const validateSmileBundleFunc = await validateSmileBundle.validate();
+                    return res.status(validateSmileBundleFunc.status ? Number(validateSmileBundleFunc.status) : 200).json({ ...validateSmileBundleFunc });
+                } else {
+                    const validateSpectranetPin = new MainSpectranetController(req, req.user);
+                    const validateSpectranetPinFunc = await validateSpectranetPin.validate();
+                    return res.status(validateSpectranetPinFunc.status ? Number(validateSpectranetPinFunc.status) : 200).json({ ...validateSpectranetPinFunc });
+                }
             case "P-Internet":
-                const paymentSmileBundle = new MainSmileBundleController(req, req.user);
-                const paymentSmileBundleFunc = await paymentSmileBundle.purchase();
-                return res.status(paymentSmileBundleFunc.status ? Number(paymentSmileBundleFunc.status) : 200).json({ ...paymentSmileBundleFunc });
+                if (req.body.type === "SMILE") {
+                    const paymentSmileBundle = new MainSmileBundleController(req, req.user);
+                    const paymentSmileBundleFunc = await paymentSmileBundle.purchase();
+                    return res.status(paymentSmileBundleFunc.status ? Number(paymentSmileBundleFunc.status) : 200).json({ ...paymentSmileBundleFunc });
+                } else {
+                    const paymentSpectranetPin = new MainSpectranetController(req, req.user);
+                    const paymentSpectranetPinFunc = await paymentSpectranetPin.purchase();
+                    return res.status(paymentSpectranetPinFunc.status ? Number(paymentSpectranetPinFunc.status) : 200).json({ ...paymentSpectranetPinFunc });
+                }
             case "SHVAL":
                 const validateShowMax = new MainShowMaxController(req, req.user);
                 const validateShowMaxFunc = await validateShowMax.validate();
                 return res.status(validateShowMaxFunc.status ? Number(validateShowMaxFunc.status) : 200).json({ ...validateShowMaxFunc });
             case "SHPAY":
                 const showmaxPayment = new MainShowMaxController(req, req.user);
-                const showmaxPaymentFunc = await showmaxPayment.validate();
-                return res.status(showmaxPaymentFunc.status ? Number(showmaxPaymentFunc.status) : 200).json({ ...showmaxPaymentFunc });
+                const showmaxPaymentFunc = await showmaxPayment.purchase();
+                return res.status(showmaxPaymentFunc?.status ? Number(showmaxPaymentFunc.status) : 200).json({ ...showmaxPaymentFunc });
+            case "NVAL":
+                const validateNtel = new MainNtelController(req, req.user);
+                const validateNtelFunc = await validateNtel.validate();
+                return res.status(validateNtelFunc.status ? Number(validateNtelFunc.status) : 200).json({ ...validateNtelFunc });
+            case "NTOP":
+                const rechargeNtel = new MainNtelController(req, req.user);
+                const rechargeNtelFunc = await rechargeNtel.recharge();
+                return res.status(rechargeNtelFunc.status ? Number(rechargeNtelFunc.status) : 200).json({ ...rechargeNtelFunc });
+            case "NPAY":
+                const TopUpNtel = new MainNtelController(req, req.user);
+                const TopUpNtelFunc = await TopUpNtel.TopUp();
+                return res.status(TopUpNtelFunc.status ? Number(TopUpNtelFunc.status) : 200).json({ ...TopUpNtelFunc });
+            case "TVA":
+                const validateToll = new MainTollController(req, req.user);
+                const validateTollFunc = await validateToll.validate();
+                return res.status(validateTollFunc.status ? Number(validateTollFunc.status) : 200).json({ ...validateTollFunc });
+            case "V-TV":
+                if (req.body.type === "DSTV") {
+                    const validateDstv = new MainDstvController(req, req.user);
+                    const validateDstvFunc = await validateDstv.validate();
+                    return res.status(validateDstvFunc.status ? Number(validateDstvFunc.status) : 200).json({ ...validateDstvFunc });
+                }
+                if (req.body.type === "GOTV") {
+                }
+                if (req.body.type === "STARTIMES") {
+                }
+            case "MULTICHOICE":
+                const checkMultichoice = new MainDstvController(req, req.user);
+                const checkMultichoiceFunc = await checkMultichoice.multichoice();
+                return res.status(checkMultichoiceFunc.status ? Number(checkMultichoiceFunc.status) : 200).json({ ...checkMultichoiceFunc });
             default:
                 return res.status(400).json({ message: "invalid service code supplied" });
         }

@@ -105,7 +105,7 @@ export class MainShowMaxController {
                 biller_id: checkSwitcher.biller_id,
                 category_id: checkSwitcher.category_id,
                 subscription_type: this.subscriptionType,
-                trans_code: uuid(),
+                trans_code: uuid().slice(0, 6),
                 name: this.package,
                 customerNumber: this.phone,
             },
@@ -133,26 +133,46 @@ export class MainShowMaxController {
                     channel: "B2B",
                     request_id: trans_code,
                     payment_method: reference,
-                    description: "Smile Bundle Purchase",
+                    description: "ShowMax Purchase",
                     destination: checkSmileRequest.customerNumber,
                     user_id: checkSmileRequest.user_id,
                     product_category_id: checkSmileRequest.category_id,
                     payment_status: "ZERO",
                 },
             });
+
             const commission = new CommissionController(trans_code, "SHOWMAX");
             await commission.disubrse();
-            const { data } = await axios.post(config.shago.testUrl, { serviceCode: "SHL" }, { headers: { hashKey: config.shago.key } });
+            const { data } = await axios.post(
+                config.shago.testUrl,
+                { serviceCode: "SHP", phone: this.phone, amount: this.amount, subscriptionType: this.subscriptionType, subscriptionPeriod: this.subscriptionPeriod, request_id: this.request_id, package: this.package },
+                { headers: { hashKey: config.shago.key } },
+            );
+            logger.info(data);
             const response = data as unknown as showMaxPaymentResponse;
             if (response.status === "200") {
                 try {
-                    Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.smiledata_requests.update({ where: { trans_code }, data: { status: "ONE" } })]);
+                    Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.showmax_requests.update({ where: { trans_code }, data: { status: "ONE" } })]);
                 } catch (error) {
                     logger.error(error);
                     return { message: "failed", status: "300" };
                 }
-                return { ...response };
+                return {
+                    amount: response.amount,
+                    message: response.message,
+                    status: response.status,
+                    transId: response.transId,
+                    date: response.date,
+                    package: response.package,
+                    subscriptionPeriod: response.subscriptionPeriod,
+                    subscriptionType: response.subscriptionType,
+                    validUntil: response.date,
+                    voucherCode: response.voucherCode,
+                    captureUrl: response.captureUrl,
+                };
             }
+            logger.info(JSON.stringify(response));
+            return { message: response.message, status: response.message };
         } catch (error) {
             try {
                 Promise.all([await prisma.smiledata_requests.update({ where: { trans_code }, data: { status: "TWO" } }), await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "TWO" } })]);

@@ -32,6 +32,12 @@ export class CommissionController {
             case "SMILE_RECHARGE":
                 get = await prisma.smile_requests.findUnique({ where: { trans_code: this.reference } });
                 transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
+            case "NTEL":
+                get = await prisma.ntel_requests.findUnique({ where: { trans_code: this.reference } });
+                transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
+            case "SPECTRANET":
+                get = await prisma.spectranet_requests.findUnique({ where: { trans_code: this.reference } });
+                transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
         }
         logger.info("insideComisionAirtime airtimerequestBelow");
 
