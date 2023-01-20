@@ -5,11 +5,14 @@ import { MainBetController } from "../services/bet/MainBetController";
 import { MainDataController } from "../services/data/MainDataController";
 import { MainDiscoController } from "../services/disco/MainDiscoController";
 import { MainDstvController } from "../services/dstv/MainDstvController";
+import { MainGotvController } from "../services/gotv/MainGotvController";
+import { getUserInfo } from "../services/info/userInfo";
 import { MainNtelController } from "../services/ntel/MainNtelController";
 import { MainShowMaxController } from "../services/Showmax/MainShowMaxController";
 import { MainSmileBundleController } from "../services/smile/MainSmileBundleController";
 import { MainSmileController } from "../services/smile/MainSmileController";
 import { MainSpectranetController } from "../services/spectranet/MainSpectranetController";
+import { MainStartimesController } from "../services/startimes/MainStartimesController";
 import { MainTollController } from "../services/toll/MainTollController";
 import { logger } from "../utils/logger";
 
@@ -107,13 +110,42 @@ export async function mainApiController(req: Request, res: Response) {
                     return res.status(validateDstvFunc.status ? Number(validateDstvFunc.status) : 200).json({ ...validateDstvFunc });
                 }
                 if (req.body.type === "GOTV") {
+                    const validateGotv = new MainGotvController(req, req.user);
+                    const validateGotvFunc = await validateGotv.validate();
+                    return res.status(validateGotvFunc.status ? Number(validateGotvFunc.status) : 200).json({ ...validateGotvFunc });
                 }
                 if (req.body.type === "STARTIMES") {
+                    const validateStartimes = new MainStartimesController(req, req.user);
+                    const validateStartimesFunc = await validateStartimes.validate();
+                    return res.status(validateStartimesFunc.status ? Number(validateStartimesFunc.status) : 200).json({ ...validateStartimesFunc });
+                }
+            case "P-TV":
+                if (req.body.type === "DSTV") {
+                    const validateDstv = new MainDstvController(req, req.user);
+                    const validateDstvFunc = await validateDstv.purchase();
+                    return res.status(validateDstvFunc.status ? Number(validateDstvFunc.status) : 200).json({ ...validateDstvFunc });
+                }
+                if (req.body.type === "GOTV") {
+                    const validateGotv = new MainGotvController(req, req.user);
+                    const validateGotvFunc = await validateGotv.purchase();
+                    return res.status(validateGotvFunc.status ? Number(validateGotvFunc.status) : 200).json({ ...validateGotvFunc });
+                }
+                if (req.body.type === "STARTIMES") {
+                    const validateStartimes = new MainStartimesController(req, req.user);
+                    const validateStartimesFunc = await validateStartimes.purchase();
+                    return res.status(validateStartimesFunc.status ? Number(validateStartimesFunc.status) : 200).json({ ...validateStartimesFunc });
                 }
             case "MULTICHOICE":
                 const checkMultichoice = new MainDstvController(req, req.user);
                 const checkMultichoiceFunc = await checkMultichoice.multichoice();
                 return res.status(checkMultichoiceFunc.status ? Number(checkMultichoiceFunc.status) : 200).json({ ...checkMultichoiceFunc });
+            case "MULTIPAY":
+                const checkMultiPay = new MainDstvController(req, req.user);
+                const checkMultiPayFunc = await checkMultiPay.multiPay();
+                return res.status(checkMultiPayFunc.status ? Number(checkMultiPayFunc.status) : 200).json({ ...checkMultiPayFunc });
+            case "INFO":
+                const getUser = await getUserInfo(req.user);
+                return res.status(getUser.status ? Number(getUser.status) : 200).json({ ...getUser });
             default:
                 return res.status(400).json({ message: "invalid service code supplied" });
         }

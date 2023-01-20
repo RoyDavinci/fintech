@@ -6,7 +6,6 @@ import { prisma } from "../../models/prisma";
 import { v4 as uuid } from "uuid";
 import { logger } from "../../utils/logger";
 import { WalletController } from "../../helpers/wallet/WalletController";
-import { NtelPurchaseController } from "./purchase";
 import { CommissionController } from "../../helpers/CommissionController";
 
 export class MainNtelController {

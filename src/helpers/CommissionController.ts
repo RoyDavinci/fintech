@@ -38,6 +38,9 @@ export class CommissionController {
             case "SPECTRANET":
                 get = await prisma.spectranet_requests.findUnique({ where: { trans_code: this.reference } });
                 transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
+            case "TV":
+                get = await prisma.paytv_requests.findUnique({ where: { trans_code: this.reference } });
+                transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
         }
         logger.info("insideComisionAirtime airtimerequestBelow");
 
@@ -93,12 +96,12 @@ export class CommissionController {
 
                     await prisma.transactions.update({ where: { request_id: this.reference }, data: { balance_after: this.actualAmount } });
                     const wallet = new WalletController(user.user_id, this.amount, `${this.type}_COMMISSION`, this.reference, "COMMISSION");
-                    await wallet.credit();
+                    await wallet.commission();
                 }
                 this.actualAmount = Number(get?.amount) - this.amount;
                 await prisma.transactions.update({ where: { request_id: this.reference }, data: { balance_after: this.actualAmount } });
                 const wallet = new WalletController(user.user_id, this.amount, `${this.type}_COMMISSION`, this.reference, "COMMISSION");
-                await wallet.credit();
+                await wallet.commission();
             } else {
                 if (this.type === "EPINS") {
                     const findValue = await prisma.pin_requests.findFirst({ where: { batch_id: this.reference } });

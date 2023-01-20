@@ -53,7 +53,6 @@ export class WalletController {
     }
 
     async commission(): Promise<returnResponse> {
-        logger.debug(`${this.userId} ${this.description} ${this.reference} ${this.source} ${this.amount}`);
         if (this.amount <= 0) return { message: "failed" };
         const checkDetails = prisma.wallets.findFirst({ where: { user_id: this.userId } });
         if (!checkDetails) return { message: "failed" };
