@@ -3,6 +3,7 @@ import HTTP_STATUS_CODE from "../constants/httpCodes";
 import { MainAirtimeController } from "../services/aitrime/MainAirtimeCoontroller";
 import { MainBetController } from "../services/bet/MainBetController";
 import { MainDataController } from "../services/data/MainDataController";
+import { MainDataHubController } from "../services/dataHub/MainDataHubController";
 import { MainDiscoController } from "../services/disco/MainDiscoController";
 import { MainDstvController } from "../services/dstv/MainDstvController";
 import { MainGotvController } from "../services/gotv/MainGotvController";
@@ -14,6 +15,7 @@ import { MainSmileController } from "../services/smile/MainSmileController";
 import { MainSpectranetController } from "../services/spectranet/MainSpectranetController";
 import { MainStartimesController } from "../services/startimes/MainStartimesController";
 import { MainTollController } from "../services/toll/MainTollController";
+import { MainWaecController } from "../services/waec/MainWaecControllet";
 import { logger } from "../utils/logger";
 
 export async function mainApiController(req: Request, res: Response) {
@@ -146,6 +148,22 @@ export async function mainApiController(req: Request, res: Response) {
             case "INFO":
                 const getUser = await getUserInfo(req.user);
                 return res.status(getUser.status ? Number(getUser.status) : 200).json({ ...getUser });
+            case "WAV":
+                const validateWaec = new MainWaecController(req, req.user);
+                const validateWaecFunc = await validateWaec.validate();
+                return res.status(validateWaecFunc.status ? Number(validateWaecFunc.status) : 200).json({ ...validateWaecFunc });
+            case "WAB":
+                const paymentWaec = new MainWaecController(req, req.user);
+                const paymentWaecFunc = await paymentWaec.purchase();
+                return res.status(paymentWaecFunc.status ? Number(paymentWaecFunc.status) : 200).json({ ...paymentWaecFunc });
+            case "V-BETADATA":
+                const validateBetaData = new MainDataHubController(req, req.user);
+                const validateBetaDataFunc = await validateBetaData.validate();
+                return res.status(validateBetaDataFunc.status ? Number(validateBetaDataFunc.status) : 200).json({ ...validateBetaDataFunc });
+            case "P-BETADATA":
+                const paymentBetaData = new MainDataHubController(req, req.user);
+                const paymentBetaDataFunc = await paymentBetaData.purchase();
+                return res.status(paymentBetaDataFunc.status ? Number(paymentBetaDataFunc.status) : 200).json({ ...paymentBetaDataFunc });
             default:
                 return res.status(400).json({ message: "invalid service code supplied" });
         }

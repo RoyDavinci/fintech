@@ -12,9 +12,16 @@ const serviceConfig = {
     },
     ringo: {
         url: "https://www.api.ringo.ng/api/agent/p2",
-        email: "georgeigwec@gmail.com",
-        password: "1234567899",
+        email: process.env.RINGO_EMAIL,
+        password: process.env.RINGO_PASSWORD,
         addonUrl: "https://www.api.ringo.ng/api/dstv/addon",
+    },
+    datahub: {
+        testPublicKey: process.env.DATAHUB_TEST_PUBLIC_KEY,
+        testPrivateKey: process.env.DATAHUB_TEST_PRIVATE_KEY,
+        merchantId: process.env.DATAHUB_MERCHANG_ID,
+        allowedIp: process.env.DATAHUB_ALLOWED_IP,
+        url: "https://api.rechargehub.ng/v1/vendData",
     },
 };
 export default serviceConfig;

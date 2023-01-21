@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { checkUser } from "../common/middlewares";
 import { authRouter } from "../controllers";
-import { createData } from "../controllers/addData";
+import { createData, createDataHub } from "../controllers/addData";
 import healthRouter from "../controllers/health/health.service";
 import { mainApiController } from "../controllers/MainController";
 

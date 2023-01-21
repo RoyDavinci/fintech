@@ -18,3 +18,16 @@ export const createData = async (req: Request, res: Response) => {
         return res.status(HTTP_STATUS_CODE.BAD_REQUEST).json({ error });
     }
 };
+
+export const createDataHub = async (req: Request, res: Response) => {
+    const { data } = req.body;
+    try {
+        const items = await data.forEach(async (item: datah_bundles) => {
+            await prisma.datah_bundles.create({ data: { allowance: item.allowance, network: item.network, category: item.category, price: item.price, actual_amount: item.price, validity: item.validity, code: item.code } });
+        });
+        return res.status(200).json({ items });
+    } catch (error) {
+        logger.error(error);
+        return res.status(HTTP_STATUS_CODE.BAD_REQUEST).json({ error });
+    }
+};
