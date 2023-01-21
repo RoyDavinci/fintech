@@ -22,6 +22,7 @@ const serviceConfig = {
         merchantId: process.env.DATAHUB_MERCHANG_ID,
         allowedIp: process.env.DATAHUB_ALLOWED_IP,
         url: "https://api.rechargehub.ng/v1/vendData",
+        encodesString: process.env.DATAHUB_ENCODED_STRING,
     },
 };
 export default serviceConfig;

@@ -106,7 +106,7 @@ export class MainWaecController {
         const createWaecRequest = await prisma.waec_requests.create({
             data: { user_id: this.user.id, biller_id: checkSwitcher.biller_id, category_id: checkSwitcher.category_id, request_id: this.request_id, trans_code: uuid().slice(0.1), amount: Number(this.amount), pinNo: Number(this.pinNo) },
         });
-        const wallet = new WalletController(this.user.id, Number(this.amount), this.type, createWaecRequest.trans_code, "Ntel Recharge Purchase");
+        const wallet = new WalletController(this.user.id, Number(this.amount), this.type, createWaecRequest.trans_code, "Waec Pin Purchase");
         const debited = await wallet.debit();
         logger.info(debited);
         if (debited.message === "success" && debited.data === Number(this.amount)) {
@@ -153,7 +153,7 @@ export class MainWaecController {
             const commission = new CommissionController(trans_code, "WAEC");
             await commission.disubrse();
             try {
-                Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.paytv_requests.update({ where: { trans_code }, data: { status: "ONE" } })]);
+                Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.waec_requests.update({ where: { trans_code }, data: { status: "ONE" } })]);
             } catch (error) {
                 logger.error(error);
                 return { message: "failed", status: "300" };

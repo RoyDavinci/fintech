@@ -44,6 +44,9 @@ export class CommissionController {
             case "WAEC":
                 get = await prisma.waec_requests.findUnique({ where: { trans_code: this.reference } });
                 transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
+            case "DATAHUB":
+                get = await prisma.data_requests.findUnique({ where: { trans_code: this.reference } });
+                transactions = await prisma.transactions.findUnique({ where: { request_id: this.reference } });
         }
         logger.info("insideComisionAirtime airtimerequestBelow");
 

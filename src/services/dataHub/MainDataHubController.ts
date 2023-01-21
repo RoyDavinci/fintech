@@ -8,6 +8,7 @@ import { WalletController } from "../../helpers/wallet/WalletController";
 import { logger } from "../../utils/logger";
 import config from "../../config";
 import axios from "axios";
+import { CommissionController } from "../../helpers/CommissionController";
 
 interface productItem {
     price: Decimal;
@@ -16,6 +17,12 @@ interface productItem {
     validity: string;
     category: string;
     network: string;
+}
+
+interface dataHubPaymentResponse {
+    statusCode: "1";
+    msg: "Operation successful";
+    data: [];
 }
 
 export class MainDataHubController {
@@ -33,6 +40,7 @@ export class MainDataHubController {
     public request_id = "";
     public networkName = "";
     public amount = "";
+    public networkId = "";
 
     async validate() {
         if (!this.body.body.phone) {
@@ -207,8 +215,17 @@ export class MainDataHubController {
                 package: "DATAHUB",
             },
         });
+        if (this.network.toLowerCase() === "mtn") {
+            this.networkId = "1";
+        } else if (this.network.toLowerCase() === "airtel") {
+            this.networkId = "4";
+        } else if (this.network.toLowerCase() === "glo") {
+            this.networkId = "3";
+        } else {
+            this.networkId = "2";
+        }
 
-        const wallet = new WalletController(this.user.id, Number(this.amount), "BETADATA", createNewDatahunRequest.trans_code, "Ntel Recharge Purchase");
+        const wallet = new WalletController(this.user.id, Number(this.amount), "BETADATA", createNewDatahunRequest.trans_code, "DATAHUB Recharge Purchase");
         const debited = await wallet.debit();
         logger.info(debited);
         if (debited.message === "success" && debited.data === Number(this.amount)) {
@@ -241,8 +258,37 @@ export class MainDataHubController {
         const string = `${config.datahub.testPublicKey}|${config.datahub.merchantId}|${this.phone}${config.datahub.testPrivateKey}`;
         const checkSum = Buffer.from(string).toString("base64");
         logger.info(checkSum);
-        const { data } = await axios.post(config.datahub.url, { merchantId: config.datahub.merchantId, networkId: this.network, plan: this.bundle, recipient: this.phone, checksum: checkSum });
-        console.log(data);
-        return { data, message: "", status: "200" };
+
+        const { data } = await axios.post(config.datahub.url, { merchantId: config.datahub.merchantId, networkId: this.networkId, plan: this.bundle, recipient: this.phone, checksum: process.env.DATAHUB_ENCODED_STRING });
+        const response = data as unknown as dataHubPaymentResponse;
+        if (response.statusCode && response.statusCode === "1") {
+            const commission = new CommissionController(trans_code, "DATAHUB");
+            await commission.disubrse();
+            try {
+                Promise.all([await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "ONE" } }), await prisma.data_requests.update({ where: { trans_code }, data: { status: "ONE" } })]);
+            } catch (error) {
+                logger.error(error);
+                return { message: "failed", status: "300" };
+            }
+            return { message: "Delivered", status: "200", amount: this.amount, transId: trans_code, type: "DATAHUB", date: new Date(), phone: this.phone, package: this.package };
+        }
+        try {
+            Promise.all([await prisma.data_requests.update({ where: { trans_code }, data: { status: "TWO" } }), await prisma.transactions.update({ where: { request_id: trans_code }, data: { status: "TWO" } })]);
+        } catch (error) {
+            logger.error(error);
+            return { message: error, status: "300" };
+        }
+        const wallet = new WalletController(this.user.id, Number(this.amount), "DATAHUB PURCHASE", trans_code, "REVERSAL_DATAHUB_RECHARGE");
+        const credit = await wallet.credit();
+        if (credit.message === "failed")
+            return {
+                message: "failed",
+                status: "300",
+            };
+
+        return {
+            message: "failed",
+            status: "300",
+        };
     }
 }

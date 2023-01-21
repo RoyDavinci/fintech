@@ -138,7 +138,7 @@ export class MainGotvController {
         } else {
             return { message: "failed", status: "300" };
         }
-        const wallet = new WalletController(this.user.id, Number(this.amount), this.type, newTvRequest.trans_code, "Ntel Recharge Purchase");
+        const wallet = new WalletController(this.user.id, Number(this.amount), this.type, newTvRequest.trans_code, "Dstv Recharge Purchase");
         const debited = await wallet.debit();
         logger.info(debited);
         if (debited.message === "success" && debited.data === Number(this.amount)) {

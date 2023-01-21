@@ -125,7 +125,7 @@ export class MainStartimesController {
                 payload: JSON.stringify(this.body.body),
             },
         });
-        const wallet = new WalletController(this.user.id, Number(this.price), this.type, newTvRequest.trans_code, "Ntel Recharge Purchase");
+        const wallet = new WalletController(this.user.id, Number(this.price), this.type, newTvRequest.trans_code, "Spectranet Recharge Purchase");
         const debited = await wallet.debit();
         logger.info(debited);
         if (debited.message === "success" && debited.data === Number(this.price)) {

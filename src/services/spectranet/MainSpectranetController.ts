@@ -100,7 +100,7 @@ export class MainSpectranetController {
                 pinNo: Number(this.pinNo),
             },
         });
-        const wallet = new WalletController(this.user.id, Number(this.amount), this.type, newSpectranetRequest.trans_code, "Ntel Recharge Purchase");
+        const wallet = new WalletController(this.user.id, Number(this.amount), this.type, newSpectranetRequest.trans_code, "Spectranet Recharge Purchase");
         const debited = await wallet.debit();
         logger.info(debited);
         if (debited.message === "success" && debited.data === Number(this.amount)) {
@@ -122,7 +122,7 @@ export class MainSpectranetController {
                 channel: "B2B",
                 request_id: trans_code,
                 payment_method: reference,
-                description: "Ntel Recharge Purchase",
+                description: "Spectranet Recharge Purchase",
                 destination: checkSpectranet.network,
                 user_id: checkSpectranet.user_id,
                 product_category_id: checkSpectranet.category_id,
