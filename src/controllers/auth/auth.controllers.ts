@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { checkMobileNumber } from "../../common/checkNumber";
 import { generateWalletId } from "../../common/generateRandomId";
 import { prisma } from "../../models/prisma";
+import jwt from "jsonwebtoken";
 
 export const createAccount = async (req: Request, res: Response) => {
     const { name, email, phone_number, password } = req.body;
@@ -43,6 +44,31 @@ export const getUsers = async (req: Request, res: Response) => {
     try {
         const users = await prisma.users.findMany({});
         return res.status(200).json({ message: "users gotten", users });
+    } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError) {
+            // The .code property can be accessed in a type-safe manner
+            if (e.code === "P2002") {
+                logger.info(e.message);
+                return res.status(HTTP_STATUS_CODE.BAD_REQUEST).json({ message: e.message });
+            }
+            logger.info(e);
+            return res.status(HTTP_STATUS_CODE.BAD_REQUEST).json({ error: e });
+        }
+        logger.info(e);
+        return res.status(HTTP_STATUS_CODE.BAD_REQUEST).json({ error: e, message: "getting users failed" });
+    }
+};
+
+export const login = async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    try {
+        const checkUser = await prisma.users.findUnique({ where: { email } });
+        if (!checkUser) return res.status(400).json({ message: "Email does not exist" });
+        const checkPassword = await bcrypt.compare(password, checkUser.password);
+        if (!checkPassword) return res.status(400).json({ message: "incorrect password" });
+        const token = jwt.sign({ email, id: checkUser.id }, `${process.env.SECRET}`);
+
+        return res.status(200).json({ user: { id: checkUser.id, email: checkUser.email, name: checkUser.name, firstname: checkUser.firstname, lastname: checkUser.lastname }, token });
     } catch (e) {
         if (e instanceof Prisma.PrismaClientKnownRequestError) {
             // The .code property can be accessed in a type-safe manner
