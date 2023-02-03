@@ -8,6 +8,8 @@ import helmet from "helmet";
 import { limiter } from "./utils/rateLimit";
 import apiV1Router from "./routes/routes";
 import "./prototype";
+import passport from "passport";
+import passportService from "./helpers/passport";
 
 const app = express();
 
@@ -22,6 +24,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(limiter);
 app.use(cors());
 app.use(helmet());
+passportService(passport);
+app.use(passport.initialize());
+app.use(passport.session());
 app.use("/api/v1", apiV1Router);
 const server: http.Server = http.createServer(app);
 
