@@ -39,18 +39,6 @@ server.listen(port, () => {
 server.on("error", onError);
 server.on("listening", onListening);
 
-// function normalizePort(val: string) {
-//     const port = parseInt(val, 10);
-//     if (Number.isNaN(port)) {
-//         return val;
-//     }
-//     if (port >= 0) {
-//         // port number
-//         return port;
-//     }
-//     return false;
-// }
-
 function onError(error: { syscall: string; code: string }) {
     if (error.syscall !== "listen") {
         throw error;

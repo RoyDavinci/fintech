@@ -9,7 +9,7 @@ const apiV1Router = Router();
 
 apiV1Router.use("/", healthRouter);
 apiV1Router.use("/auth", authRouter);
-apiV1Router.use("/start", checkUser, mainApiController);
+apiV1Router.post("/start", checkUser, mainApiController);
 apiV1Router.post("/datah", createData);
 
 export default apiV1Router;

@@ -1,5 +1,5 @@
 import { users } from "@prisma/client";
-import passport, { PassportStatic } from "passport";
+import { PassportStatic } from "passport";
 import passportLocal from "passport-local";
 import bcrypt from "bcryptjs";
 import passportJWT from "passport-jwt";
@@ -10,15 +10,20 @@ const jwtOptions = {
     secretOrKey: process.env.SECRET,
 };
 
+interface payload {
+    id: number;
+    email: string;
+}
+
 async function passportService(passport: PassportStatic) {
     passport.use(
-        new passportJWT.Strategy(jwtOptions, async (jwtPayload, done) => {
+        new passportJWT.Strategy(jwtOptions, async (jwtPayload: payload, done) => {
             try {
-                const user: users | null = await prisma.users.findUnique({ where: { id: Number(jwtPayload.id) } });
+                const user: users | null = await prisma.users.findUnique({ where: { id: jwtPayload.id } });
                 if (!user) {
-                    return done(null, { message: "authentication not approved" });
+                    return done(null, false, { message: "authentication not approved" });
                 }
-                return done(null, user, { message: "authenticated successfullly" });
+                return done(null, false, { message: "authenticated successfullly" });
             } catch (error) {
                 return done(error, false, { message: "Error processing your info" });
             }
@@ -26,11 +31,11 @@ async function passportService(passport: PassportStatic) {
     );
 
     passport.use(
-        new passportLocal.Strategy(async (username, password, done) => {
+        new passportLocal.Strategy(async (email, password, done) => {
             try {
-                const user: users | null = await prisma.users.findUnique({ where: { email: username } });
+                const user: users | undefined | null = await prisma.users.findUnique({ where: { email } });
                 if (!user) {
-                    return done(null, false, { message: `${username} is not a registered account` });
+                    return done(null, false, { message: `${email} is not a registered account` });
                 }
                 const isMatch: boolean = await bcrypt.compare(password, user.password);
                 if (isMatch) {

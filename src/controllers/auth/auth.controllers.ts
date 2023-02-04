@@ -67,7 +67,6 @@ export const login = async (req: Request, res: Response) => {
         const checkPassword = await bcrypt.compare(password, checkUser.password);
         if (!checkPassword) return res.status(400).json({ message: "incorrect password" });
         const token = jwt.sign({ email, id: checkUser.id }, `${process.env.SECRET}`);
-
         return res.status(200).json({ user: { id: checkUser.id, email: checkUser.email, name: checkUser.name, firstname: checkUser.firstname, lastname: checkUser.lastname }, token });
     } catch (e) {
         if (e instanceof Prisma.PrismaClientKnownRequestError) {

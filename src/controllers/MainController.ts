@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, Express } from "express";
 import HTTP_STATUS_CODE from "../constants/httpCodes";
 import { MainAirtimeController } from "../services/aitrime/MainAirtimeCoontroller";
 import { MainBetController } from "../services/bet/MainBetController";
@@ -24,6 +24,7 @@ export async function mainApiController(req: Request, res: Response) {
     try {
         if (!serviceCode) return res.status(HTTP_STATUS_CODE.BAD_REQUEST).json({ message: "service code is required" });
         logger.info(serviceCode);
+        if (!req.user) return { message: "no user" };
         switch (serviceCode) {
             case "V-ELECT":
                 const validateDisco = new MainDiscoController(req, req.user);
